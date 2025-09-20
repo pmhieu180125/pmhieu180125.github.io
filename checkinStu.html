@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theo Dõi Chuỗi Học Tập</title>
+    <!-- Tích hợp Tailwind CSS để làm giao diện đẹp hơn -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tích hợp Google Fonts để có font chữ đẹp -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Tích hợp thư viện icon Lucide -->
+    <script src="https://unpkg.com/lucide-react@0.323.0/dist/umd/lucide.min.js"></script>
+    <style>
+        /* Sử dụng font Be Vietnam Pro cho toàn bộ trang */
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #f0f2f5; /* Một màu nền nhẹ nhàng */
+        }
+        /* Hiệu ứng gradient cho nền */
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        /* Hiệu ứng cho nút khi di chuột qua */
+        .btn-hover-effect {
+            transition: all 0.3s ease;
+        }
+        .btn-hover-effect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        /* Tạo kiểu cho ngày trong lịch */
+        .calendar-day.today {
+            background-color: #a78bfa; /* Màu tím nhạt cho ngày hôm nay */
+            color: white;
+            border-radius: 50%;
+        }
+        .calendar-day.streaked {
+            background-color: #34d399; /* Màu xanh lá cho ngày đã check-in */
+            color: white;
+            border-radius: 50%;
+            position: relative;
+        }
+        /* Thêm biểu tượng ngọn lửa cho ngày đã check-in */
+        .calendar-day.streaked::after {
+            content: '🔥';
+            position: absolute;
+            top: -8px;
+            right: -5px;
+            font-size: 0.7rem;
+        }
+        .input-goal:focus {
+            outline: none;
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <div id="app" class="min-h-screen flex flex-col items-center justify-center p-4">
+
+        <div class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8 space-y-6">
+            
+            <!-- Phần tiêu đề và mục tiêu -->
+            <header class="text-center">
+                <div class="flex items-center justify-center gap-2">
+                    <i data-lucide="flame" class="text-orange-500"></i>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Chuỗi Học Tập</h1>
+                </div>
+                <p class="text-gray-500 mt-1">Duy trì động lực mỗi ngày!</p>
+                <input 
+                    type="text" 
+                    id="learning-goal" 
+                    placeholder="Mục tiêu của bạn là gì? (ví dụ: Học Lập trình 30 ngày)"
+                    class="w-full mt-4 p-3 text-center border-2 border-gray-200 rounded-lg transition duration-300 input-goal"
+                >
+            </header>
+
+            <!-- Phần hiển thị chuỗi -->
+            <div class="grid grid-cols-2 gap-4 text-center">
+                <div class="bg-violet-100 p-4 rounded-lg">
+                    <p class="text-sm text-violet-700 font-medium">CHUỖI HIỆN TẠI</p>
+                    <p id="current-streak" class="text-4xl font-bold text-violet-900">0</p>
+                    <p class="text-xs text-violet-600">ngày</p>
+                </div>
+                <div class="bg-emerald-100 p-4 rounded-lg">
+                    <p class="text-sm text-emerald-700 font-medium">CHUỖI DÀI NHẤT</p>
+                    <p id="longest-streak" class="text-4xl font-bold text-emerald-900">0</p>
+                    <p class="text-xs text-emerald-600">ngày</p>
+                </div>
+            </div>
+
+            <!-- Lịch -->
+            <div id="calendar-container">
+                <div class="flex items-center justify-between mb-2">
+                    <button id="prev-month" class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="chevron-left"></i></button>
+                    <h2 id="month-year" class="font-bold text-lg"></h2>
+                    <button id="next-month" class="p-2 rounded-full hover:bg-gray-100"><i data-lucide="chevron-right"></i></button>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-sm">
+                    <!-- Tên các ngày trong tuần sẽ được thêm bằng JS -->
+                </div>
+            </div>
+
+            <!-- Nút Check-in -->
+            <button id="checkin-btn" class="w-full gradient-bg text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 btn-hover-effect disabled:opacity-50 disabled:cursor-not-allowed">
+                <i data-lucide="check-circle-2"></i>
+                <span id="checkin-text">Check-in Hôm Nay</span>
+            </button>
+            
+            <!-- Trích dẫn tạo động lực -->
+            <div id="quote-container" class="text-center pt-4 border-t border-gray-200">
+                <p class="text-sm italic text-gray-500">"Hành trình vạn dặm bắt đầu bằng một bước chân."</p>
+            </div>
+        </div>
+
+        <footer class="text-center mt-8 text-gray-500 text-sm">
+            <p>Tạo bởi Gemini với ❤️</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CÁC BIẾN VÀ TRẠNG THÁI ---
+            const appState = {
+                goal: 'Học tập mỗi ngày',
+                streakedDates: [], // Lưu các ngày đã check-in dưới dạng 'YYYY-MM-DD'
+                currentStreak: 0,
+                longestStreak: 0,
+                currentCalendarDate: new Date(),
+            };
+
+            const quotes = [
+                "Cách tốt nhất để dự đoán tương lai là tạo ra nó.",
+                "Đừng đợi cơ hội, hãy tạo ra nó.",
+                "Thất bại là mẹ của thành công.",
+                "Học, học nữa, học mãi.",
+                "Kỷ luật là cầu nối giữa mục tiêu và thành tựu.",
+                "Người duy nhất bạn nên cố gắng trở nên tốt hơn là chính bạn của ngày hôm qua.",
+                "Hãy bắt đầu từ nơi bạn đứng. Sử dụng những gì bạn có. Làm những gì bạn có thể.",
+            ];
+
+            // --- LẤY CÁC PHẦN TỬ DOM ---
+            const goalInput = document.getElementById('learning-goal');
+            const currentStreakEl = document.getElementById('current-streak');
+            const longestStreakEl = document.getElementById('longest-streak');
+            const checkinBtn = document.getElementById('checkin-btn');
+            const checkinText = document.getElementById('checkin-text');
+            const calendarGrid = document.getElementById('calendar-grid');
+            const monthYearEl = document.getElementById('month-year');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+            const quoteContainer = document.getElementById('quote-container');
+
+            // --- HÀM XỬ LÝ DỮ LIỆU ---
+
+            // Lấy ngày hôm nay dưới định dạng 'YYYY-MM-DD'
+            const getTodayString = () => {
+                const today = new Date();
+                return today.toISOString().split('T')[0];
+            };
+
+            // Lưu trạng thái vào Local Storage
+            const saveData = () => {
+                const dataToSave = {
+                    goal: appState.goal,
+                    streakedDates: appState.streakedDates
+                };
+                localStorage.setItem('learningStreakApp', JSON.stringify(dataToSave));
+            };
+            
+            // Tải dữ liệu từ Local Storage
+            const loadData = () => {
+                const savedData = localStorage.getItem('learningStreakApp');
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    appState.goal = parsedData.goal || 'Học tập mỗi ngày';
+                    appState.streakedDates = parsedData.streakedDates || [];
+                }
+            };
+            
+            // Tính toán chuỗi hiện tại và chuỗi dài nhất
+            const calculateStreaks = () => {
+                if (appState.streakedDates.length === 0) {
+                    appState.currentStreak = 0;
+                    appState.longestStreak = 0;
+                    return;
+                }
+
+                const sortedDates = [...new Set(appState.streakedDates)].sort();
+                let current = 0;
+                let longest = 0;
+                let tempStreak = 0;
+                
+                // Tính chuỗi dài nhất
+                for (let i = 0; i < sortedDates.length; i++) {
+                    if (i === 0) {
+                        tempStreak = 1;
+                    } else {
+                        const prevDate = new Date(sortedDates[i-1]);
+                        const currentDate = new Date(sortedDates[i]);
+                        const diffTime = currentDate - prevDate;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays === 1) {
+                            tempStreak++;
+                        } else {
+                            tempStreak = 1;
+                        }
+                    }
+                    if (tempStreak > longest) {
+                        longest = tempStreak;
+                    }
+                }
+                appState.longestStreak = longest;
+                
+                // Tính chuỗi hiện tại
+                const today = new Date(getTodayString());
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+
+                const hasCheckedInToday = sortedDates.includes(getTodayString());
+                const hasCheckedInYesterday = sortedDates.includes(yesterday.toISOString().split('T')[0]);
+
+                if (!hasCheckedInToday && !hasCheckedInYesterday) {
+                    appState.currentStreak = 0;
+                } else {
+                     current = 0;
+                     // Tính ngược từ ngày hôm nay (hoặc hôm qua nếu hôm nay chưa check-in)
+                     let lastDateStr = hasCheckedInToday ? getTodayString() : yesterday.toISOString().split('T')[0];
+                     
+                     if (sortedDates.includes(lastDateStr)) {
+                        current = 1;
+                        for (let i = sortedDates.indexOf(lastDateStr) - 1; i >= 0; i--) {
+                            const prevDate = new Date(sortedDates[i]);
+                            const currentDate = new Date(sortedDates[i+1]);
+                            const diffTime = currentDate - prevDate;
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                            if (diffDays === 1) {
+                                current++;
+                            } else {
+                                break;
+                            }
+                        }
+                     }
+                }
+                appState.currentStreak = current;
+            };
+
+            // --- HÀM CẬP NHẬT GIAO DIỆN ---
+
+            // Cập nhật giao diện chính
+            const renderUI = () => {
+                calculateStreaks();
+
+                goalInput.value = appState.goal;
+                currentStreakEl.textContent = appState.currentStreak;
+                longestStreakEl.textContent = appState.longestStreak;
+                
+                const hasCheckedInToday = appState.streakedDates.includes(getTodayString());
+                if(hasCheckedInToday){
+                    checkinBtn.disabled = true;
+                    checkinText.textContent = 'Đã Check-in Hôm Nay!';
+                } else {
+                    checkinBtn.disabled = false;
+                    checkinText.textContent = 'Check-in Hôm Nay';
+                }
+
+                renderCalendar();
+            };
+            
+            // Vẽ lịch
+            const renderCalendar = () => {
+                calendarGrid.innerHTML = '';
+                const date = appState.currentCalendarDate;
+                const year = date.getFullYear();
+                const month = date.getMonth();
+
+                monthYearEl.textContent = `Tháng ${month + 1}, ${year}`;
+
+                const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 = Sunday, 1 = Monday...
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                // Thêm các ngày trong tuần
+                const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+                weekdays.forEach(day => {
+                    const dayEl = document.createElement('div');
+                    dayEl.textContent = day;
+                    dayEl.className = 'font-bold text-gray-500';
+                    calendarGrid.appendChild(dayEl);
+                });
+
+                // Thêm các ô trống cho ngày đầu tháng
+                const firstDayIndex = firstDayOfMonth === 0 ? 6 : firstDayOfMonth -1; // Chuyển Chủ nhật ra cuối
+                for (let i = 0; i < firstDayIndex; i++) {
+                    calendarGrid.appendChild(document.createElement('div'));
+                }
+
+                // Thêm các ngày trong tháng
+                const todayString = getTodayString();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayEl = document.createElement('div');
+                    dayEl.textContent = day;
+                    dayEl.className = 'p-2 calendar-day flex items-center justify-center h-8 w-8';
+                    const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    
+                    if (dateString === todayString) {
+                        dayEl.classList.add('today');
+                    }
+                    if (appState.streakedDates.includes(dateString)) {
+                        dayEl.classList.add('streaked');
+                    }
+                    calendarGrid.appendChild(dayEl);
+                }
+            };
+            
+            // Hiển thị một câu trích dẫn ngẫu nhiên
+            const showRandomQuote = () => {
+                const randomIndex = Math.floor(Math.random() * quotes.length);
+                quoteContainer.querySelector('p').textContent = `"${quotes[randomIndex]}"`;
+            };
+
+            // --- HÀM XỬ LÝ SỰ KIỆN ---
+
+            const handleCheckIn = () => {
+                const todayStr = getTodayString();
+                if (!appState.streakedDates.includes(todayStr)) {
+                    appState.streakedDates.push(todayStr);
+                    saveData();
+                    renderUI();
+                }
+            };
+
+            const handleGoalChange = (event) => {
+                appState.goal = event.target.value;
+                saveData();
+            };
+
+            // --- KHỞI TẠO ỨNG DỤNG ---
+            const init = () => {
+                loadData();
+                renderUI();
+                showRandomQuote();
+
+                // Thêm các sự kiện
+                checkinBtn.addEventListener('click', handleCheckIn);
+                goalInput.addEventListener('change', handleGoalChange);
+                prevMonthBtn.addEventListener('click', () => {
+                    appState.currentCalendarDate.setMonth(appState.currentCalendarDate.getMonth() - 1);
+                    renderCalendar();
+                });
+                nextMonthBtn.addEventListener('click', () => {
+                    appState.currentCalendarDate.setMonth(appState.currentCalendarDate.getMonth() + 1);
+                    renderCalendar();
+                });
+                
+                // Kích hoạt thư viện icon
+                lucide.createIcons();
+            };
+
+            init();
+        });
+    </script>
+</body>
+</html>
